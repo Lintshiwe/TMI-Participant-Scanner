@@ -7,6 +7,7 @@
     <title>TMI Ticket Scanner</title>
     <!-- HTML5 QR Code Library -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script>if(!/Mobi|Android|iPad|iPhone|iPod|tablet|webOS/i.test(navigator.userAgent)){window.location.replace('desktop-restricted.html')}</script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
@@ -250,10 +251,6 @@
     </div>
 
     <script>
-        if (!/Mobi|Android|iPad|iPhone|iPod|tablet|webOS/i.test(navigator.userAgent)) {
-            window.location.replace('desktop-restricted.html');
-        }
-
         const FORM_HANDLER_URL = 'https://tmi-form-handler.netlify.app';
 
         let stats = JSON.parse(localStorage.getItem('tmi_scanner_stats') || '{"total":0,"valid":0,"invalid":0}');
