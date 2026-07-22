@@ -1,0 +1,15 @@
+[build]
+  publish = "."
+  command = "echo 'Static site - no build step'"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+
+[[redirects]]
+  from = "/"
+  to = "/scanner.html"
+  status = 200
