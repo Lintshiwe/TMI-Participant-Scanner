@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Restricted | TMI Scanner</title>
+    <style>
+        :root {
+            --bg: #f0f8ff;
+            --surface: #e0f0ff;
+            --primary: #2563eb;
+            --danger: #ef4444;
+            --text: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            color: var(--text);
+        }
+
+        .container {
+            text-align: center;
+            max-width: 500px;
+            padding: 40px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .monitor-wrapper {
+            width: 200px;
+            height: 160px;
+            margin: 0 auto 40px;
+            position: relative;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .monitor-screen {
+            width: 100%;
+            height: 120px;
+            background: var(--surface);
+            border: 3px solid var(--text-muted);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .monitor-stand {
+            width: 60px;
+            height: 20px;
+            background: var(--text-muted);
+            margin: 0 auto;
+            border-radius: 0 0 8px 8px;
+            position: relative;
+        }
+        .monitor-stand::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 10px;
+            background: var(--text-muted);
+            border-radius: 4px;
+        }
+
+        .no-desktop-icon {
+            width: 60px;
+            height: 60px;
+            stroke: var(--danger);
+            stroke-width: 3;
+            fill: none;
+            position: relative;
+        }
+
+        .fragment {
+            position: absolute;
+            background: var(--danger);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .frag-1 { width: 20px; height: 20px; top: 20%; left: 20%; clip-path: polygon(0 0, 100% 0, 0 100%); animation: shatter1 3s ease-in-out infinite; }
+        .frag-2 { width: 15px; height: 15px; top: 60%; right: 25%; clip-path: polygon(100% 0, 100% 100%, 0 100%); animation: shatter2 3s ease-in-out infinite 0.5s; }
+        .frag-3 { width: 25px; height: 10px; bottom: 30%; left: 40%; clip-path: polygon(0 0, 100% 50%, 0 100%); animation: shatter3 3s ease-in-out infinite 1s; }
+        .frag-4 { width: 12px; height: 12px; top: 30%; right: 30%; clip-path: polygon(50% 0, 100% 100%, 0 100%); animation: shatter4 3s ease-in-out infinite 1.5s; }
+
+        @keyframes shatter1 { 0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0; } 50% { transform: translate(-30px, -40px) rotate(-45deg); opacity: 1; } }
+        @keyframes shatter2 { 0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0; } 50% { transform: translate(40px, -30px) rotate(60deg); opacity: 1; } }
+        @keyframes shatter3 { 0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0; } 50% { transform: translate(-20px, 50px) rotate(30deg); opacity: 1; } }
+        @keyframes shatter4 { 0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0; } 50% { transform: translate(30px, 40px) rotate(-60deg); opacity: 1; } }
+
+        .overlay-x {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(239, 68, 68, 0.1);
+            backdrop-filter: blur(2px);
+        }
+        .overlay-x svg {
+            width: 80px;
+            height: 80px;
+            stroke: var(--danger);
+            stroke-width: 4;
+            fill: none;
+            filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.5));
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 12px;
+        }
+
+        p {
+            font-size: 16px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .device-hint {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: rgba(37, 99, 235, 0.1);
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .device-hint svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background-image: 
+                linear-gradient(var(--surface) 1px, transparent 1px),
+                linear-gradient(90deg, var(--surface) 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: 0.5;
+            mask-image: radial-gradient(circle at center, black 30%, transparent 80%);
+        }
+
+        @media (max-width: 480px) {
+            .monitor-wrapper { transform: scale(0.8); margin-bottom: 24px; }
+            h1 { font-size: 24px; }
+            p { font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-grid"></div>
+
+    <div class="container">
+        <div class="monitor-wrapper">
+            <div class="monitor-screen">
+                <svg class="no-desktop-icon" viewBox="0 0 24 24">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+                
+                <div class="overlay-x">
+                    <svg viewBox="0 0 24 24">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </div>
+
+                <div class="fragment frag-1"></div>
+                <div class="fragment frag-2"></div>
+                <div class="fragment frag-3"></div>
+                <div class="fragment frag-4"></div>
+            </div>
+            <div class="monitor-stand"></div>
+        </div>
+
+        <h1>Desktop Access Restricted</h1>
+        <p>
+            The TMI Participant Scanner is optimized exclusively for mobile devices. 
+            Please access this page using your smartphone or tablet to scan tickets.
+        </p>
+
+        <div class="device-hint">
+            <svg viewBox="0 0 24 24"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>
+            Switch to Mobile Device
+        </div>
+    </div>
+
+    <script>
+        function checkDevice() {
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            if (isMobile) {
+                // If somehow on mobile but seeing this, redirect to scanner
+            }
+        }
+        window.addEventListener('DOMContentLoaded', checkDevice);
+    </script>
+</body>
+</html>

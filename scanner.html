@@ -250,6 +250,10 @@
     </div>
 
     <script>
+        if (!/Mobi|Android|iPad|iPhone|iPod|tablet|webOS/i.test(navigator.userAgent)) {
+            window.location.replace('desktop-restricted.html');
+        }
+
         const FORM_HANDLER_URL = 'https://tmi-form-handler.netlify.app';
 
         let stats = JSON.parse(localStorage.getItem('tmi_scanner_stats') || '{"total":0,"valid":0,"invalid":0}');
