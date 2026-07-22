@@ -73,17 +73,6 @@
             box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
         }
 
-        /* Animated Corner Brackets */
-        .corner {
-            position: absolute; width: 30px; height: 30px;
-            border-color: #3b82f6; border-style: solid;
-            transition: all 0.3s ease;
-        }
-        .corner.tl { top: -2px; left: -2px; border-width: 4px 0 0 4px; border-radius: 12px 0 0 0; }
-        .corner.tr { top: -2px; right: -2px; border-width: 4px 4px 0 0; border-radius: 0 12px 0 0; }
-        .corner.bl { bottom: -2px; left: -2px; border-width: 0 0 4px 4px; border-radius: 0 0 0 12px; }
-        .corner.br { bottom: -2px; right: -2px; border-width: 0 4px 4px 0; border-radius: 0 0 12px 0; }
-
         /* Scanning Laser Line */
         .scan-line {
             position: absolute; left: 10%; right: 10%; height: 2px;
@@ -101,10 +90,10 @@
         }
 
         /* Success/Error States */
-        .scan-frame.success .corner { border-color: #4ade80; box-shadow: 0 0 20px rgba(74,222,128,0.5); }
+        .scan-frame.success { border-color: #4ade80; box-shadow: 0 0 20px rgba(74,222,128,0.3), 0 0 0 9999px rgba(0,0,0,0.5); }
         .scan-frame.success .scan-line { background: #4ade80; box-shadow: 0 0 10px #4ade80; animation: none; top: 50%; }
         
-        .scan-frame.error .corner { border-color: #f87171; animation: shake 0.5s ease-in-out; }
+        .scan-frame.error { border-color: #f87171; animation: shake 0.5s ease-in-out; }
         .scan-frame.error .scan-line { background: #f87171; box-shadow: 0 0 10px #f87171; animation: none; top: 50%; }
 
         @keyframes shake {
@@ -207,6 +196,9 @@
         @media (min-width: 768px) {
             .scan-frame { width: 320px; height: 320px; }
         }
+        @media (max-width: 360px) {
+            .scan-frame { width: 220px; height: 220px; }
+        }
     </style>
 </head>
 <body>
@@ -238,10 +230,6 @@
     <!-- Scan Overlay -->
     <div class="scan-overlay">
         <div class="scan-frame" id="scanFrame">
-            <div class="corner tl"></div>
-            <div class="corner tr"></div>
-            <div class="corner bl"></div>
-            <div class="corner br"></div>
             <div class="scan-line"></div>
         </div>
     </div>
