@@ -7,8 +7,8 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <link rel="icon" type="image/png" href="assets/favicon.png">
-    <title>TMI Ticket Scanner v3</title>
-    <script>document.documentElement.dataset.v="3"</script>
+    <title>TMI Scanner v4</title>
+    <script>document.documentElement.dataset.v="4"</script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>if(!/Mobi|Android|iPad|iPhone|iPod|tablet|webOS/i.test(navigator.userAgent)){window.location.replace('desktop-restricted.html')}</script>
     <style>
@@ -34,24 +34,23 @@
         /* ── Header Stats Bar ─────────────────────── */
         .header {
             position: absolute; top: 0; left: 0; right: 0;
-            z-index: 10; padding: 16px 20px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+            z-index: 10; padding: 24px 20px 8px;
             display: flex; justify-content: space-between; align-items: center;
         }
-        .stats { display: flex; gap: 16px; }
+        .stats { display: flex; gap: 20px; }
         .stat-item { text-align: center; }
         .stat-value { font-size: 18px; font-weight: 700; }
-        .stat-label { font-size: 10px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-label { font-size: 10px; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px; }
         .stat-valid .stat-value { color: var(--success); }
         .stat-invalid .stat-value { color: var(--danger); }
 
         .flash-btn {
-            width: 40px; height: 40px; border-radius: 50%;
-            background: rgba(255,255,255,0.15); border: none;
+            width: 44px; height: 44px; border-radius: 50%;
+            background: rgba(255,255,255,0.12); border: none;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; backdrop-filter: blur(10px);
+            cursor: pointer;
         }
-        .flash-btn svg { width: 20px; height: 20px; fill: white; }
+        .flash-btn svg { width: 22px; height: 22px; fill: white; }
         .flash-btn.active { background: var(--warning); }
         .flash-btn.active svg { fill: #000; }
 
@@ -59,22 +58,24 @@
         #reader { 
             flex: 1; position: relative; 
             width: 100% !important; height: 100% !important;
+            background: #000;
         }
         #reader video { 
             object-fit: cover !important; 
             width: 100% !important; height: 100% !important; 
+            display: block !important;
         }
+        /* Only hide the dashboard selection UI, NOT scan_region (contains video) */
         #reader__dashboard_section_csr span,
         #reader__camera_selection,
         #reader__status_span,
         #reader__dashboard_section { display: none !important; }
-        #reader__scan_region { display: none !important; }
-        #reader video { object-fit: cover !important; }
 
         /* ── Scan Overlay ─────────────────────────── */
         .scan-overlay {
             position: fixed; inset: 0; z-index: 5;
             pointer-events: none;
+            background: rgba(0,0,0,0.65);
             display: flex; align-items: center; justify-content: center;
         }
 
@@ -84,7 +85,6 @@
             border-radius: 24px;
             position: relative;
             transition: border-color 0.4s, box-shadow 0.4s;
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.65);
         }
 
         /* ── Scan Line ────────────────────────────── */
@@ -112,10 +112,7 @@
             transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
             z-index: 4;
         }
-        .success-ring.show {
-            opacity: 1; transform: scale(1);
-            box-shadow: 0 0 30px rgba(74,222,128,0.3);
-        }
+        .success-ring.show { opacity: 1; transform: scale(1); box-shadow: 0 0 30px rgba(74,222,128,0.3); }
 
         /* ── Checkmark ────────────────────────────── */
         .checkmark {
@@ -131,64 +128,62 @@
             stroke: var(--success); stroke-width: 6; fill: none;
             filter: drop-shadow(0 4px 10px rgba(74,222,128,0.5));
         }
-        .checkmark path {
-            stroke-dasharray: 100; stroke-dashoffset: 100;
-            animation: drawCheck 0.6s ease forwards 0.15s;
-        }
+        .checkmark path { stroke-dasharray: 100; stroke-dashoffset: 100; animation: drawCheck 0.6s ease forwards 0.15s; }
         @keyframes drawCheck { to { stroke-dashoffset: 0; } }
 
-        /* ── Status Bar (between camera and controls) */
-        .status-bar {
-            position: absolute; left: 0; right: 0;
-            bottom: 140px; z-index: 8;
-            text-align: center; padding: 0 20px;
+        /* ── Status Text ──────────────────────────── */
+        .status-text {
+            position: fixed; left: 0; right: 0; z-index: 8;
+            bottom: 170px; text-align: center;
+            font-size: 22px; font-weight: 800;
+            transition: color 0.3s;
+            text-shadow: 0 2px 12px rgba(0,0,0,0.9);
             pointer-events: none;
         }
-        .status-text {
-            font-size: 22px; font-weight: 800;
-            transition: all 0.3s;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
-        }
         .status-detail {
-            font-size: 13px; color: rgba(255,255,255,0.6);
-            margin-top: 4px; transition: all 0.3s;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+            position: fixed; left: 0; right: 0; z-index: 8;
+            bottom: 144px; text-align: center;
+            font-size: 13px; color: rgba(255,255,255,0.5);
+            transition: color 0.3s;
+            text-shadow: 0 2px 12px rgba(0,0,0,0.9);
+            pointer-events: none;
         }
 
-        /* ── Ticket Info ──────────────────────────── */
         .ticket-info {
-            margin-top: 8px;
-            padding: 12px 16px;
-            background: rgba(0,0,0,0.6);
+            position: fixed; left: 50%; z-index: 8;
+            bottom: 60px;
+            transform: translateX(-50%);
+            padding: 10px 16px;
+            background: rgba(0,0,0,0.7);
             backdrop-filter: blur(12px);
-            border-radius: 14px;
-            border: 1px solid rgba(255,255,255,0.08);
-            font-family: monospace; font-size: 13px;
-            text-align: left; max-width: 300px;
-            margin-left: auto; margin-right: auto;
-            opacity: 0; transform: translateY(10px);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.06);
+            font-family: monospace; font-size: 12px;
+            text-align: left; width: 280px;
+            opacity: 0; transform: translateX(-50%) translateY(10px);
             transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none;
         }
-        .ticket-info.show { opacity: 1; transform: translateY(0); }
+        .ticket-info.show { opacity: 1; transform: translateX(-50%) translateY(0); }
         .info-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
         .info-row:last-child { margin-bottom: 0; }
-        .info-label { color: rgba(255,255,255,0.4); }
+        .info-label { color: rgba(255,255,255,0.35); }
         .info-value { color: white; font-weight: 600; }
 
         /* ── State Colors ─────────────────────────── */
-        .state-analyzing .scan-frame { border-color: var(--primary); box-shadow: 0 0 20px rgba(59,130,246,0.2), 0 0 0 9999px rgba(0,0,0,0.65); }
+        .state-analyzing .scan-frame { border-color: var(--primary); box-shadow: 0 0 20px rgba(59,130,246,0.2); }
         .state-analyzing .scan-line { animation: none; top: 50%; opacity: 0.5; }
         .state-analyzing .status-text { color: var(--primary); }
 
-        .state-valid .scan-frame { border-color: var(--success); box-shadow: 0 0 20px rgba(74,222,128,0.3), 0 0 0 9999px rgba(0,0,0,0.65); }
+        .state-valid .scan-frame { border-color: var(--success); box-shadow: 0 0 25px rgba(74,222,128,0.3); }
         .state-valid .scan-line { background: linear-gradient(90deg, transparent, var(--success), transparent); box-shadow: 0 0 12px var(--success); animation: none; top: 50%; }
         .state-valid .status-text { color: var(--success); }
 
-        .state-used .scan-frame { border-color: var(--warning); box-shadow: 0 0 20px rgba(251,191,36,0.3), 0 0 0 9999px rgba(0,0,0,0.65); animation: shake 0.5s ease; }
+        .state-used .scan-frame { border-color: var(--warning); box-shadow: 0 0 25px rgba(251,191,36,0.3); animation: shake 0.5s ease; }
         .state-used .scan-line { background: linear-gradient(90deg, transparent, var(--warning), transparent); box-shadow: 0 0 12px var(--warning); animation: none; top: 50%; }
         .state-used .status-text { color: var(--warning); }
 
-        .state-invalid .scan-frame { border-color: var(--danger); box-shadow: 0 0 20px rgba(248,113,113,0.3), 0 0 0 9999px rgba(0,0,0,0.65); animation: shake 0.5s ease; }
+        .state-invalid .scan-frame { border-color: var(--danger); box-shadow: 0 0 25px rgba(248,113,113,0.3); animation: shake 0.5s ease; }
         .state-invalid .scan-line { background: linear-gradient(90deg, transparent, var(--danger), transparent); box-shadow: 0 0 12px var(--danger); animation: none; top: 50%; }
         .state-invalid .status-text { color: var(--danger); }
 
@@ -196,21 +191,19 @@
 
         /* ── Bottom Controls ──────────────────────── */
         .controls {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            z-index: 10; padding: 24px 20px 40px;
-            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+            position: fixed; bottom: 0; left: 0; right: 0;
+            z-index: 10; padding: 40px 20px 32px;
             display: flex; flex-direction: column; gap: 12px;
         }
         .manual-btn {
             width: 100%; padding: 16px;
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
             border-radius: 16px; color: white; font-size: 15px; font-weight: 600;
-            cursor: pointer; backdrop-filter: blur(10px);
+            cursor: pointer;
             display: flex; align-items: center; justify-content: center; gap: 8px;
-            pointer-events: auto;
         }
-        .manual-btn:active { background: rgba(255,255,255,0.2); }
-        .instruction { text-align: center; font-size: 13px; opacity: 0.6; }
+        .manual-btn:active { background: rgba(255,255,255,0.18); }
+        .instruction { text-align: center; font-size: 13px; opacity: 0.4; }
 
         /* ── Manual Entry ─────────────────────────── */
         .manual-input-modal {
@@ -243,7 +236,6 @@
 </head>
 <body>
 
-    <!-- Header Stats -->
     <div class="header">
         <div class="stats">
             <div class="stat-item">
@@ -264,10 +256,8 @@
         </button>
     </div>
 
-    <!-- Camera Viewfinder (library clears and populates this) -->
     <div id="reader"></div>
 
-    <!-- Scan Overlay (fixed, covers entire viewport, no background — scan-frame's box-shadow darkens around it) -->
     <div class="scan-overlay" id="scanOverlay">
         <div class="scan-frame" id="scanFrame">
             <div class="scan-line" id="scanLine"></div>
@@ -278,28 +268,24 @@
         </div>
     </div>
 
-    <!-- Status Bar (positioned above controls) -->
-    <div class="status-bar">
-        <div class="status-text" id="statusText">Scanning...</div>
-        <div class="status-detail" id="statusDetail">Align QR code within the frame</div>
-        <div class="ticket-info" id="ticketInfo">
-            <div class="info-row"><span class="info-label">Name</span><span class="info-value" id="tName">--</span></div>
-            <div class="info-row"><span class="info-label">Team</span><span class="info-value" id="tTeam">--</span></div>
-            <div class="info-row"><span class="info-label">Track</span><span class="info-value" id="tTrack">--</span></div>
-            <div class="info-row"><span class="info-label">Ticket</span><span class="info-value" id="tTicket">--</span></div>
-        </div>
+    <div class="status-text" id="statusText">Scanning...</div>
+    <div class="status-detail" id="statusDetail">Align QR code within the frame</div>
+
+    <div class="ticket-info" id="ticketInfo">
+        <div class="info-row"><span class="info-label">Name</span><span class="info-value" id="tName">--</span></div>
+        <div class="info-row"><span class="info-label">Team</span><span class="info-value" id="tTeam">--</span></div>
+        <div class="info-row"><span class="info-label">Track</span><span class="info-value" id="tTrack">--</span></div>
+        <div class="info-row"><span class="info-label">Ticket</span><span class="info-value" id="tTicket">--</span></div>
     </div>
 
-    <!-- Bottom Controls -->
     <div class="controls">
         <button class="manual-btn" onclick="showManualInput()">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12h6M12 9v6"/></svg>
             Enter Code Manually
         </button>
-        <div class="instruction">Align QR code within the frame</div>
+        <div class="instruction">Scan the QR code on a participant's ticket</div>
     </div>
 
-    <!-- Manual Input Modal -->
     <div class="manual-input-modal" id="manualModal">
         <input type="text" id="manualCode" placeholder="Enter ticket code" autocomplete="off">
         <button class="continue-btn" onclick="validateManual()">Validate</button>
@@ -309,11 +295,43 @@
     <script>
         const FORM_HANDLER_URL = 'https://tmi-form-handler.netlify.app';
 
-        let stats = { total: 0, valid: 0, invalid: 0 };
-        let scanner = null;
-        let isProcessing = false;
-        let flashOn = false;
-        let resetTimer = null;
+        var stats = { total: 0, valid: 0, invalid: 0 };
+        var scanner = null;
+        var isProcessing = false;
+        var flashOn = false;
+        var resetTimer = null;
+
+        // ── Nuke library's scan boundary overlay ─────
+        function removeScanBoundary() {
+            var scanRegion = document.getElementById('reader__scan_region');
+            if (!scanRegion) return;
+
+            var video = scanRegion.querySelector('video');
+            // Remove any element that isn't the video or an ancestor of it
+            var all = scanRegion.querySelectorAll('*');
+            var toRemove = [];
+            for (var i = 0; i < all.length; i++) {
+                var el = all[i];
+                if (el === video) continue;
+                if (video && el.contains(video)) continue;
+                if (el.id === 'reader__dashboard_section') continue;
+                el.style.cssText = ''; // strip inline styles
+                toRemove.push(el);
+            }
+            for (var i = 0; i < toRemove.length; i++) {
+                try { toRemove[i].remove(); } catch(e) {}
+            }
+            scanRegion.style.background = 'transparent';
+            // Position video to fill the reader
+            if (video) {
+                video.style.position = 'absolute';
+                video.style.top = '0';
+                video.style.left = '0';
+                video.style.width = '100%';
+                video.style.height = '100%';
+                video.style.objectFit = 'cover';
+            }
+        }
 
         // ── Scanner Init ──────────────────────────────
         function initScanner() {
@@ -326,18 +344,8 @@
                 onScanSuccess,
                 onScanFailure
             ).then(function() {
-                // After library initializes, nuke its scan region elements
-                var el = document.getElementById('reader__scan_region');
-                if (el) { el.style.display = 'none'; }
-                // Also hide any child scan overlay the library creates
-                var children = document.querySelectorAll('#reader div');
-                children.forEach(function(d) { 
-                    if (d.id !== 'reader__dashboard_section') {
-                        d.style.background = 'transparent';
-                        d.style.border = 'none';
-                        d.style.outline = 'none';
-                    }
-                });
+                // Nuke the library's dashed-border scan boundary
+                setTimeout(removeScanBoundary, 200);
             }).catch(function(err) {
                 console.error("Camera error:", err);
             });
@@ -351,13 +359,14 @@
 
         // ── Phase Transitions ─────────────────────────
         function setState(state) {
-            var overlay = document.getElementById('scanOverlay');
-            overlay.className = 'scan-overlay state-' + state;
+            document.getElementById('scanOverlay').className = 'scan-overlay state-' + state;
+            document.getElementById('statusText').className = 'status-text';
+            document.getElementById('statusText').classList.add('state-' + state);
         }
 
         function resetState() {
-            var overlay = document.getElementById('scanOverlay');
-            overlay.className = 'scan-overlay';
+            document.getElementById('scanOverlay').className = 'scan-overlay';
+            document.getElementById('statusText').className = 'status-text';
             document.getElementById('statusText').textContent = 'Scanning...';
             document.getElementById('statusDetail').textContent = 'Align QR code within the frame';
             document.getElementById('successRing').classList.remove('show');
@@ -374,23 +383,16 @@
             stopScanner();
             if (navigator.vibrate) navigator.vibrate(100);
 
-            // Phase 1: Analyzing
             setState('analyzing');
             document.getElementById('statusText').textContent = 'Analyzing...';
             document.getElementById('statusDetail').textContent = 'Verifying ticket authenticity';
 
-            // Phase 2: Backend validation
             var result = await validateTicket(decodedText);
             updateStats(result.isValid);
 
-            // Phase 3: Show animated result
-            if (result.isValid) {
-                showValidResult(result);
-            } else if (result.errorType === 'already_checked_in') {
-                showUsedResult(result);
-            } else {
-                showInvalidResult(result);
-            }
+            if (result.isValid) { showValidResult(result); }
+            else if (result.errorType === 'already_checked_in') { showUsedResult(result); }
+            else { showInvalidResult(result); }
 
             clearTimeout(resetTimer);
             resetTimer = setTimeout(resetFromResult, result.isValid ? 5000 : 4000);
@@ -398,16 +400,13 @@
 
         function onScanFailure() {}
 
-        // ── Result Animations ─────────────────────────
         function showValidResult(result) {
             setState('valid');
             document.getElementById('statusText').textContent = 'VERIFIED';
             document.getElementById('statusDetail').textContent = 'Access granted. Welcome to TMI!';
             document.getElementById('successRing').classList.add('show');
 
-            setTimeout(function() {
-                document.getElementById('checkmark').classList.add('show');
-            }, 200);
+            setTimeout(function() { document.getElementById('checkmark').classList.add('show'); }, 200);
 
             if (result.data) {
                 document.getElementById('tName').textContent = result.data.name || '--';
@@ -415,10 +414,7 @@
                 document.getElementById('tTrack').textContent = result.data.track || '--';
                 document.getElementById('tTicket').textContent = result.data.ticketId || '--';
             }
-            setTimeout(function() {
-                document.getElementById('ticketInfo').classList.add('show');
-            }, 400);
-
+            setTimeout(function() { document.getElementById('ticketInfo').classList.add('show'); }, 400);
             if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
         }
 
@@ -446,7 +442,6 @@
         async function validateTicket(code) {
             var ticketId = code;
             var sig = '';
-
             try {
                 var parsed = JSON.parse(code);
                 if (parsed.ticketId) { ticketId = parsed.ticketId; sig = parsed.sig || ''; }
@@ -463,11 +458,7 @@
                 if (result.success && result.data) {
                     return { isValid: true, data: result.data };
                 } else if (result.error === 'already_checked_in') {
-                    return {
-                        isValid: false,
-                        errorType: 'already_checked_in',
-                        message: result.message || 'Already checked in at ' + (result.checkedInAt || 'earlier')
-                    };
+                    return { isValid: false, errorType: 'already_checked_in', message: result.message || 'Already checked in' };
                 } else {
                     return { isValid: false, errorType: 'invalid', message: result.error || 'Invalid ticket' };
                 }
@@ -512,36 +503,28 @@
             document.getElementById('manualModal').classList.add('show');
             document.getElementById('manualCode').focus();
         }
-
         function hideManualInput() {
             document.getElementById('manualModal').classList.remove('show');
             document.getElementById('manualCode').value = '';
         }
-
         async function validateManual() {
             var code = document.getElementById('manualCode').value.trim();
             if (!code) return;
             hideManualInput();
-
             if (isProcessing) return;
             isProcessing = true;
             stopScanner();
-
             setState('analyzing');
             document.getElementById('statusText').textContent = 'Analyzing...';
             document.getElementById('statusDetail').textContent = 'Verifying ticket authenticity';
-
             var result = await validateTicket(code);
             updateStats(result.isValid);
-
             if (result.isValid) { showValidResult(result); }
             else if (result.errorType === 'already_checked_in') { showUsedResult(result); }
             else { showInvalidResult(result); }
-
             clearTimeout(resetTimer);
             resetTimer = setTimeout(resetFromResult, result.isValid ? 5000 : 4000);
         }
-
         document.getElementById('manualCode')?.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') validateManual();
         });
