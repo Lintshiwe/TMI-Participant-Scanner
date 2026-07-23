@@ -73,7 +73,7 @@
 
         /* ── Scan Overlay ─────────────────────────── */
         .scan-overlay {
-            position: absolute; inset: 0; z-index: 5;
+            position: fixed; inset: 0; z-index: 5;
             pointer-events: none;
             background: radial-gradient(circle at center, transparent 28%, rgba(0,0,0,0.65) 72%);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -82,25 +82,12 @@
 
         .scan-frame {
             width: 260px; height: 260px;
+            border: 2px solid rgba(255,255,255,0.3);
             border-radius: 24px;
             position: relative;
             transition: all 0.4s;
             box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
         }
-
-        /* ── Corner Brackets ──────────────────────── */
-        .corner {
-            position: absolute;
-            width: 28px; height: 28px;
-            border-color: var(--primary);
-            border-style: solid;
-            transition: all 0.4s;
-            z-index: 6;
-        }
-        .corner.tl { top: 6px; left: 6px; border-width: 3px 0 0 3px; border-radius: 8px 0 0 0; }
-        .corner.tr { top: 6px; right: 6px; border-width: 3px 3px 0 0; border-radius: 0 8px 0 0; }
-        .corner.bl { bottom: 6px; left: 6px; border-width: 0 0 3px 3px; border-radius: 0 0 0 8px; }
-        .corner.br { bottom: 6px; right: 6px; border-width: 0 3px 3px 0; border-radius: 0 0 8px 0; }
 
         /* ── Scanning Laser Line ──────────────────── */
         .scan-line {
@@ -197,23 +184,21 @@
 
         /* ── State Colors ─────────────────────────── */
         /* Scanning (default) */
-        .state-analyzing .corner { border-color: var(--primary); animation: pulse 1s infinite; }
+        .state-analyzing .scan-frame { border-color: var(--primary); box-shadow: 0 0 20px rgba(59,130,246,0.2), 0 0 0 9999px rgba(0,0,0,0.5); }
         .state-analyzing .scan-line { animation: none; top: 50%; opacity: 0.5; }
         .state-analyzing .status-text { color: var(--primary); }
 
-        .state-valid .corner { border-color: var(--success); }
+        .state-valid .scan-frame { border-color: var(--success); box-shadow: 0 0 20px rgba(74,222,128,0.3), 0 0 0 9999px rgba(0,0,0,0.5); }
         .state-valid .scan-line { background: linear-gradient(90deg, transparent, var(--success), transparent); box-shadow: 0 0 12px var(--success); animation: none; top: 50%; }
         .state-valid .status-text { color: var(--success); }
 
-        .state-used .corner { border-color: var(--warning); }
+        .state-used .scan-frame { border-color: var(--warning); box-shadow: 0 0 20px rgba(251,191,36,0.3), 0 0 0 9999px rgba(0,0,0,0.5); animation: shake 0.5s ease; }
         .state-used .scan-line { background: linear-gradient(90deg, transparent, var(--warning), transparent); box-shadow: 0 0 12px var(--warning); animation: none; top: 50%; }
         .state-used .status-text { color: var(--warning); }
-        .state-used .scan-frame { animation: shake 0.5s ease; }
 
-        .state-invalid .corner { border-color: var(--danger); }
+        .state-invalid .scan-frame { border-color: var(--danger); box-shadow: 0 0 20px rgba(248,113,113,0.3), 0 0 0 9999px rgba(0,0,0,0.5); animation: shake 0.5s ease; }
         .state-invalid .scan-line { background: linear-gradient(90deg, transparent, var(--danger), transparent); box-shadow: 0 0 12px var(--danger); animation: none; top: 50%; }
         .state-invalid .status-text { color: var(--danger); }
-        .state-invalid .scan-frame { animation: shake 0.5s ease; }
 
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
         @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
@@ -296,32 +281,28 @@
     </div>
 
     <!-- Camera Viewfinder -->
-    <div id="reader">
-        <!-- Scan Overlay -->
-        <div class="scan-overlay" id="scanOverlay">
-            <div class="scan-frame" id="scanFrame">
-                <div class="corner tl"></div>
-                <div class="corner tr"></div>
-                <div class="corner bl"></div>
-                <div class="corner br"></div>
-                <div class="scan-line" id="scanLine"></div>
-                <div class="success-ring" id="successRing"></div>
-                <div class="checkmark" id="checkmark">
-                    <svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
-                </div>
-            </div>
+    <div id="reader"></div>
 
-            <div class="status-area">
-                <div class="status-text" id="statusText">Scanning...</div>
-                <div class="status-detail" id="statusDetail">Align QR code within the frame</div>
+    <!-- Scan Overlay (outside reader - html5-qrcode clears reader's content) -->
+    <div class="scan-overlay" id="scanOverlay">
+        <div class="scan-frame" id="scanFrame">
+            <div class="scan-line" id="scanLine"></div>
+            <div class="success-ring" id="successRing"></div>
+            <div class="checkmark" id="checkmark">
+                <svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
             </div>
+        </div>
 
-            <div class="ticket-info" id="ticketInfo">
-                <div class="info-row"><span class="info-label">Name</span><span class="info-value" id="tName">--</span></div>
-                <div class="info-row"><span class="info-label">Team</span><span class="info-value" id="tTeam">--</span></div>
-                <div class="info-row"><span class="info-label">Track</span><span class="info-value" id="tTrack">--</span></div>
-                <div class="info-row"><span class="info-label">Ticket</span><span class="info-value" id="tTicket">--</span></div>
-            </div>
+        <div class="status-area">
+            <div class="status-text" id="statusText">Scanning...</div>
+            <div class="status-detail" id="statusDetail">Align QR code within the frame</div>
+        </div>
+
+        <div class="ticket-info" id="ticketInfo">
+            <div class="info-row"><span class="info-label">Name</span><span class="info-value" id="tName">--</span></div>
+            <div class="info-row"><span class="info-label">Team</span><span class="info-value" id="tTeam">--</span></div>
+            <div class="info-row"><span class="info-label">Track</span><span class="info-value" id="tTrack">--</span></div>
+            <div class="info-row"><span class="info-label">Ticket</span><span class="info-value" id="tTicket">--</span></div>
         </div>
     </div>
 
