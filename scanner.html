@@ -344,8 +344,7 @@
     <script>
         const FORM_HANDLER_URL = 'https://tmi-form-handler.netlify.app';
 
-        let stats = JSON.parse(localStorage.getItem('tmi_scanner_stats') || '{"total":0,"valid":0,"invalid":0}');
-        function persistStats() { localStorage.setItem('tmi_scanner_stats', JSON.stringify(stats)); }
+        let stats = { total: 0, valid: 0, invalid: 0 };
         let scanner = null;
         let isProcessing = false;
         let flashOn = false;
@@ -500,6 +499,27 @@
         }
 
         // ── Stats ─────────────────────────────────────
+        async function loadStats() {
+            try {
+                var r = await fetch(FORM_HANDLER_URL + '/api/scanner-stats');
+                var j = await r.json();
+                if (j.success && j.data) stats = j.data;
+            } catch (_) {}
+            document.getElementById('totalCount').textContent = stats.total;
+            document.getElementById('validCount').textContent = stats.valid;
+            document.getElementById('invalidCount').textContent = stats.invalid;
+        }
+
+        async function persistStats() {
+            try {
+                await fetch(FORM_HANDLER_URL + '/api/scanner-stats', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(stats)
+                });
+            } catch (_) {}
+        }
+
         function updateStats(isValid) {
             stats.total++;
             if (isValid) stats.valid++; else stats.invalid++;
@@ -562,10 +582,8 @@
         }
 
         // ── Init ──────────────────────────────────────
-        window.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('totalCount').textContent = stats.total;
-            document.getElementById('validCount').textContent = stats.valid;
-            document.getElementById('invalidCount').textContent = stats.invalid;
+        window.addEventListener('DOMContentLoaded', async function() {
+            await loadStats();
             initScanner();
         });
 
