@@ -313,6 +313,8 @@
         var flashOn = false;
         var resetTimer = null;
 
+        var nukeObserver = null;
+
         function removeScanBoundary() {
             var scanRegion = document.getElementById('reader__scan_region');
             if (!scanRegion) return;
@@ -340,6 +342,23 @@
             }
         }
 
+        function startNukeObserver() {
+            var reader = document.getElementById('reader');
+            if (!reader) return;
+            if (nukeObserver) nukeObserver.disconnect();
+            nukeObserver = new MutationObserver(function() {
+                removeScanBoundary();
+                var els = reader.querySelectorAll('*');
+                for (var i = 0; i < els.length; i++) {
+                    var s = els[i].style;
+                    if (s.borderStyle === 'dashed' || s.outlineStyle === 'dashed') {
+                        els[i].style.display = 'none';
+                    }
+                }
+            });
+            nukeObserver.observe(reader, { childList: true, subtree: true });
+        }
+
         function initScanner() {
             scanner = new Html5Qrcode("reader");
             scanner.start(
@@ -348,7 +367,8 @@
                 onScanSuccess,
                 onScanFailure
             ).then(function() {
-                setTimeout(removeScanBoundary, 200);
+                startNukeObserver();
+                removeScanBoundary();
             }).catch(function(err) {
                 console.error("Camera error:", err);
             });
