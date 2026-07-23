@@ -58,7 +58,10 @@
         /* Hide default library UI elements */
         #reader__dashboard_section_csr span, 
         #reader__camera_selection, 
-        #reader__status_span { display: none !important; }
+        #reader__status_span,
+        #reader__scan_region,
+        #reader__dashboard_section { display: none !important; }
+        #reader video { object-fit: cover !important; }
 
         /* Custom Scan Overlay */
         .scan-overlay {
