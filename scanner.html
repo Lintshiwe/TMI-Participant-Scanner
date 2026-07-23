@@ -6,11 +6,9 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, proxy-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <link rel="icon" type="image/png" href="assets/favicon.png">
-    <title>TMI Ticket Scanner v2</title>
-    <script>document.documentElement.dataset.v="2"</script>
-    <!-- HTML5 QR Code Library -->
+    <title>TMI Ticket Scanner v3</title>
+    <script>document.documentElement.dataset.v="3"</script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>if(!/Mobi|Android|iPad|iPhone|iPod|tablet|webOS/i.test(navigator.userAgent)){window.location.replace('desktop-restricted.html')}</script>
     <style>
@@ -57,27 +55,27 @@
         .flash-btn.active { background: var(--warning); }
         .flash-btn.active svg { fill: #000; }
 
-        /* ── Camera Viewfinder ────────────────────── */
+        /* ── Camera Viewport ──────────────────────── */
         #reader { 
             flex: 1; position: relative; 
             width: 100% !important; height: 100% !important;
         }
-        #reader video { object-fit: cover; width: 100% !important; height: 100% !important; }
-        
-        #reader__dashboard_section_csr span, 
-        #reader__camera_selection, 
+        #reader video { 
+            object-fit: cover !important; 
+            width: 100% !important; height: 100% !important; 
+        }
+        #reader__dashboard_section_csr span,
+        #reader__camera_selection,
         #reader__status_span,
-        #reader__scan_region,
         #reader__dashboard_section { display: none !important; }
+        #reader__scan_region { display: none !important; }
         #reader video { object-fit: cover !important; }
 
         /* ── Scan Overlay ─────────────────────────── */
         .scan-overlay {
             position: fixed; inset: 0; z-index: 5;
             pointer-events: none;
-            background: radial-gradient(circle at center, transparent 28%, rgba(0,0,0,0.65) 72%);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: background 0.4s;
+            display: flex; align-items: center; justify-content: center;
         }
 
         .scan-frame {
@@ -85,17 +83,16 @@
             border: 2px solid rgba(255,255,255,0.3);
             border-radius: 24px;
             position: relative;
-            transition: all 0.4s;
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
+            transition: border-color 0.4s, box-shadow 0.4s;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.65);
         }
 
-        /* ── Scanning Laser Line ──────────────────── */
+        /* ── Scan Line ────────────────────────────── */
         .scan-line {
             position: absolute; left: 10%; right: 10%; height: 2px;
             background: linear-gradient(90deg, transparent, var(--primary), transparent);
             box-shadow: 0 0 12px var(--primary);
             animation: scanMove 2s ease-in-out infinite;
-            opacity: 0.85;
             z-index: 6;
         }
 
@@ -111,8 +108,7 @@
             position: absolute; inset: -6px;
             border: 3px solid var(--success);
             border-radius: 30px;
-            opacity: 0;
-            transform: scale(0.8);
+            opacity: 0; transform: scale(0.8);
             transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
             z-index: 4;
         }
@@ -121,7 +117,7 @@
             box-shadow: 0 0 30px rgba(74,222,128,0.3);
         }
 
-        /* ── Checkmark ──────────────────────────── */
+        /* ── Checkmark ────────────────────────────── */
         .checkmark {
             position: absolute; inset: 0;
             display: flex; align-items: center; justify-content: center;
@@ -132,77 +128,71 @@
         .checkmark.show { opacity: 1; transform: scale(1); }
         .checkmark svg {
             width: 70px; height: 70px;
-            stroke: var(--success);
-            stroke-width: 6; fill: none;
+            stroke: var(--success); stroke-width: 6; fill: none;
             filter: drop-shadow(0 4px 10px rgba(74,222,128,0.5));
         }
         .checkmark path {
-            stroke-dasharray: 100;
-            stroke-dashoffset: 100;
+            stroke-dasharray: 100; stroke-dashoffset: 100;
             animation: drawCheck 0.6s ease forwards 0.15s;
         }
         @keyframes drawCheck { to { stroke-dashoffset: 0; } }
 
-        /* ── Status Area ──────────────────────────── */
-        .status-area {
-            margin-top: 24px;
-            text-align: center;
-            transition: all 0.3s;
+        /* ── Status Bar (between camera and controls) */
+        .status-bar {
+            position: absolute; left: 0; right: 0;
+            bottom: 140px; z-index: 8;
+            text-align: center; padding: 0 20px;
+            pointer-events: none;
         }
         .status-text {
             font-size: 22px; font-weight: 800;
             transition: all 0.3s;
-            min-height: 30px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
         }
         .status-detail {
-            font-size: 13px; color: rgba(255,255,255,0.5);
+            font-size: 13px; color: rgba(255,255,255,0.6);
             margin-top: 4px; transition: all 0.3s;
-            min-height: 20px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
         }
 
         /* ── Ticket Info ──────────────────────────── */
         .ticket-info {
-            margin-top: 16px;
-            padding: 14px 18px;
-            background: rgba(255,255,255,0.08);
+            margin-top: 8px;
+            padding: 12px 16px;
+            background: rgba(0,0,0,0.6);
             backdrop-filter: blur(12px);
             border-radius: 14px;
-            border: 1px solid rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
             font-family: monospace; font-size: 13px;
-            text-align: left; width: 280px;
-            opacity: 0; transform: translateY(12px);
+            text-align: left; max-width: 300px;
+            margin-left: auto; margin-right: auto;
+            opacity: 0; transform: translateY(10px);
             transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         .ticket-info.show { opacity: 1; transform: translateY(0); }
-        .info-row {
-            display: flex; justify-content: space-between;
-            margin-bottom: 6px;
-        }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
         .info-row:last-child { margin-bottom: 0; }
         .info-label { color: rgba(255,255,255,0.4); }
         .info-value { color: white; font-weight: 600; }
 
         /* ── State Colors ─────────────────────────── */
-        /* Scanning (default) */
-        .state-analyzing .scan-frame { border-color: var(--primary); box-shadow: 0 0 20px rgba(59,130,246,0.2), 0 0 0 9999px rgba(0,0,0,0.5); }
+        .state-analyzing .scan-frame { border-color: var(--primary); box-shadow: 0 0 20px rgba(59,130,246,0.2), 0 0 0 9999px rgba(0,0,0,0.65); }
         .state-analyzing .scan-line { animation: none; top: 50%; opacity: 0.5; }
         .state-analyzing .status-text { color: var(--primary); }
 
-        .state-valid .scan-frame { border-color: var(--success); box-shadow: 0 0 20px rgba(74,222,128,0.3), 0 0 0 9999px rgba(0,0,0,0.5); }
+        .state-valid .scan-frame { border-color: var(--success); box-shadow: 0 0 20px rgba(74,222,128,0.3), 0 0 0 9999px rgba(0,0,0,0.65); }
         .state-valid .scan-line { background: linear-gradient(90deg, transparent, var(--success), transparent); box-shadow: 0 0 12px var(--success); animation: none; top: 50%; }
         .state-valid .status-text { color: var(--success); }
 
-        .state-used .scan-frame { border-color: var(--warning); box-shadow: 0 0 20px rgba(251,191,36,0.3), 0 0 0 9999px rgba(0,0,0,0.5); animation: shake 0.5s ease; }
+        .state-used .scan-frame { border-color: var(--warning); box-shadow: 0 0 20px rgba(251,191,36,0.3), 0 0 0 9999px rgba(0,0,0,0.65); animation: shake 0.5s ease; }
         .state-used .scan-line { background: linear-gradient(90deg, transparent, var(--warning), transparent); box-shadow: 0 0 12px var(--warning); animation: none; top: 50%; }
         .state-used .status-text { color: var(--warning); }
 
-        .state-invalid .scan-frame { border-color: var(--danger); box-shadow: 0 0 20px rgba(248,113,113,0.3), 0 0 0 9999px rgba(0,0,0,0.5); animation: shake 0.5s ease; }
+        .state-invalid .scan-frame { border-color: var(--danger); box-shadow: 0 0 20px rgba(248,113,113,0.3), 0 0 0 9999px rgba(0,0,0,0.65); animation: shake 0.5s ease; }
         .state-invalid .scan-line { background: linear-gradient(90deg, transparent, var(--danger), transparent); box-shadow: 0 0 12px var(--danger); animation: none; top: 50%; }
         .state-invalid .status-text { color: var(--danger); }
 
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
         @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         /* ── Bottom Controls ──────────────────────── */
         .controls {
@@ -211,7 +201,6 @@
             background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
             display: flex; flex-direction: column; gap: 12px;
         }
-
         .manual-btn {
             width: 100%; padding: 16px;
             background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
@@ -221,12 +210,9 @@
             pointer-events: auto;
         }
         .manual-btn:active { background: rgba(255,255,255,0.2); }
+        .instruction { text-align: center; font-size: 13px; opacity: 0.6; }
 
-        .instruction {
-            text-align: center; font-size: 13px; opacity: 0.6;
-        }
-
-        /* ── Manual Entry Input ───────────────────── */
+        /* ── Manual Entry ─────────────────────────── */
         .manual-input-modal {
             position: fixed; inset: 0; z-index: 100;
             background: rgba(0,0,0,0.95); backdrop-filter: blur(20px);
@@ -234,7 +220,6 @@
             padding: 40px;
         }
         .manual-input-modal.show { display: flex; }
-
         .manual-input-modal input {
             width: 100%; max-width: 300px; padding: 16px;
             background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);
@@ -242,7 +227,6 @@
             margin-bottom: 20px; outline: none;
         }
         .manual-input-modal input:focus { border-color: var(--primary); }
-
         .close-manual {
             margin-top: 20px; background: none; border: none;
             color: rgba(255,255,255,0.6); font-size: 14px; cursor: pointer;
@@ -280,10 +264,10 @@
         </button>
     </div>
 
-    <!-- Camera Viewfinder -->
+    <!-- Camera Viewfinder (library clears and populates this) -->
     <div id="reader"></div>
 
-    <!-- Scan Overlay (outside reader - html5-qrcode clears reader's content) -->
+    <!-- Scan Overlay (fixed, covers entire viewport, no background — scan-frame's box-shadow darkens around it) -->
     <div class="scan-overlay" id="scanOverlay">
         <div class="scan-frame" id="scanFrame">
             <div class="scan-line" id="scanLine"></div>
@@ -292,12 +276,12 @@
                 <svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
             </div>
         </div>
+    </div>
 
-        <div class="status-area">
-            <div class="status-text" id="statusText">Scanning...</div>
-            <div class="status-detail" id="statusDetail">Align QR code within the frame</div>
-        </div>
-
+    <!-- Status Bar (positioned above controls) -->
+    <div class="status-bar">
+        <div class="status-text" id="statusText">Scanning...</div>
+        <div class="status-detail" id="statusDetail">Align QR code within the frame</div>
         <div class="ticket-info" id="ticketInfo">
             <div class="info-row"><span class="info-label">Name</span><span class="info-value" id="tName">--</span></div>
             <div class="info-row"><span class="info-label">Team</span><span class="info-value" id="tTeam">--</span></div>
@@ -341,25 +325,38 @@
                 { fps: 10, qrbox: { width: 250, height: 250 }, disableFlip: false },
                 onScanSuccess,
                 onScanFailure
-            ).catch(err => {
+            ).then(function() {
+                // After library initializes, nuke its scan region elements
+                var el = document.getElementById('reader__scan_region');
+                if (el) { el.style.display = 'none'; }
+                // Also hide any child scan overlay the library creates
+                var children = document.querySelectorAll('#reader div');
+                children.forEach(function(d) { 
+                    if (d.id !== 'reader__dashboard_section') {
+                        d.style.background = 'transparent';
+                        d.style.border = 'none';
+                        d.style.outline = 'none';
+                    }
+                });
+            }).catch(function(err) {
                 console.error("Camera error:", err);
             });
         }
 
         function stopScanner() {
             if (scanner && scanner._isScanning) {
-                scanner.stop().catch(() => {});
+                scanner.stop().catch(function() {});
             }
         }
 
         // ── Phase Transitions ─────────────────────────
         function setState(state) {
-            const overlay = document.getElementById('scanOverlay');
+            var overlay = document.getElementById('scanOverlay');
             overlay.className = 'scan-overlay state-' + state;
         }
 
         function resetState() {
-            const overlay = document.getElementById('scanOverlay');
+            var overlay = document.getElementById('scanOverlay');
             overlay.className = 'scan-overlay';
             document.getElementById('statusText').textContent = 'Scanning...';
             document.getElementById('statusDetail').textContent = 'Align QR code within the frame';
@@ -383,7 +380,7 @@
             document.getElementById('statusDetail').textContent = 'Verifying ticket authenticity';
 
             // Phase 2: Backend validation
-            const result = await validateTicket(decodedText);
+            var result = await validateTicket(decodedText);
             updateStats(result.isValid);
 
             // Phase 3: Show animated result
@@ -408,7 +405,7 @@
             document.getElementById('statusDetail').textContent = 'Access granted. Welcome to TMI!';
             document.getElementById('successRing').classList.add('show');
 
-            setTimeout(() => {
+            setTimeout(function() {
                 document.getElementById('checkmark').classList.add('show');
             }, 200);
 
@@ -418,7 +415,7 @@
                 document.getElementById('tTrack').textContent = result.data.track || '--';
                 document.getElementById('tTicket').textContent = result.data.ticketId || '--';
             }
-            setTimeout(() => {
+            setTimeout(function() {
                 document.getElementById('ticketInfo').classList.add('show');
             }, 400);
 
