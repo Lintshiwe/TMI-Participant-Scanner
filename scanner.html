@@ -195,6 +195,61 @@
         .state-used .status-text { color: #fbbf24; }
         .state-invalid .status-text { color: #f87171; }
 
+        /* ── Result Overlay ───────────────────────── */
+        .result-overlay {
+            position: fixed; inset: 0; z-index: 50;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.88); backdrop-filter: blur(8px);
+            animation: fadeIn 0.3s ease;
+        }
+        .result-overlay.show { display: flex; }
+
+        .result-icon {
+            width: 100px; height: 100px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 24px; transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .result-icon.valid { background: rgba(74,222,128,0.15); box-shadow: 0 0 40px rgba(74,222,128,0.3); }
+        .result-icon.used { background: rgba(251,191,36,0.15); box-shadow: 0 0 40px rgba(251,191,36,0.3); }
+        .result-icon.invalid { background: rgba(248,113,113,0.15); box-shadow: 0 0 40px rgba(248,113,113,0.3); }
+        .result-icon svg { width: 50px; height: 50px; stroke-width: 3; fill: none; }
+        .result-icon.valid svg { stroke: #4ade80; }
+        .result-icon.used svg { stroke: #fbbf24; }
+        .result-icon.invalid svg { stroke: #f87171; }
+        .result-icon path { stroke-dasharray: 100; stroke-dashoffset: 100; animation: drawCheck 0.6s ease forwards 0.15s; }
+
+        .result-title {
+            font-size: 26px; font-weight: 800; margin-bottom: 6px;
+            text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+        }
+        .result-valid .result-title { color: #4ade80; }
+        .result-used .result-title { color: #fbbf24; }
+        .result-invalid .result-title { color: #f87171; }
+
+        .result-msg {
+            font-size: 14px; color: rgba(255,255,255,0.5);
+            margin-bottom: 20px; text-align: center; max-width: 280px;
+        }
+
+        .result-card {
+            padding: 16px 20px; margin-bottom: 28px;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px; width: 280px;
+        }
+        .result-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; }
+        .result-label { color: rgba(255,255,255,0.35); }
+        .result-value { color: white; font-weight: 600; }
+
+        .scan-next-btn {
+            padding: 16px 48px; border-radius: 14px; font-size: 16px;
+            font-weight: 700; cursor: pointer; border: none;
+            transition: all 0.2s ease; letter-spacing: 0.5px;
+        }
+        .result-valid .scan-next-btn { background: #4ade80; color: #000; }
+        .result-used .scan-next-btn { background: #fbbf24; color: #000; }
+        .result-invalid .scan-next-btn { background: #f87171; color: #fff; }
+        .scan-next-btn:active { transform: scale(0.96); }
+
         /* ── Bottom Controls ──────────────────────── */
         .controls {
             position: absolute; bottom: 0; left: 0; right: 0;
@@ -299,6 +354,21 @@
         <div class="info-row"><span class="info-label">Ticket</span><span class="info-value" id="tTicket">--</span></div>
     </div>
 
+    <div class="result-overlay" id="resultOverlay">
+        <div class="result-icon" id="resultIcon">
+            <svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+        </div>
+        <div class="result-title" id="resultTitle">VERIFIED</div>
+        <div class="result-msg" id="resultMsg">Access granted. Welcome to TMI!</div>
+        <div class="result-card" id="resultCard">
+            <div class="result-row"><span class="result-label">Name</span><span class="result-value" id="rName">--</span></div>
+            <div class="result-row"><span class="result-label">Team</span><span class="result-value" id="rTeam">--</span></div>
+            <div class="result-row"><span class="result-label">Track</span><span class="result-value" id="rTrack">--</span></div>
+            <div class="result-row"><span class="result-label">Ticket</span><span class="result-value" id="rTicket">--</span></div>
+        </div>
+        <button class="scan-next-btn" onclick="resetFromButton()">Scan Next</button>
+    </div>
+
     <div class="controls">
         <button class="manual-btn" onclick="showManualInput()">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12h6M12 9v6"/></svg>
@@ -400,6 +470,7 @@
             document.getElementById('successRing').classList.remove('show');
             document.getElementById('checkmark').classList.remove('show');
             document.getElementById('ticketInfo').classList.remove('show');
+            document.getElementById('resultOverlay').classList.remove('show');
         }
 
         async function onScanSuccess(decodedText) {
@@ -419,9 +490,6 @@
             if (result.isValid) { showValidResult(result); }
             else if (result.errorType === 'already_checked_in') { showUsedResult(result); }
             else { showInvalidResult(result); }
-
-            clearTimeout(resetTimer);
-            resetTimer = setTimeout(resetFromResult, result.isValid ? 5000 : 4000);
         }
 
         function onScanFailure() {}
@@ -440,6 +508,7 @@
             }
             setTimeout(function() { document.getElementById('ticketInfo').classList.add('show'); }, 400);
             if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+            showResultOverlay('valid', 'VERIFIED', 'Access granted. Welcome to TMI!', result.data);
         }
 
         function showUsedResult(result) {
@@ -447,6 +516,7 @@
             document.getElementById('statusText').textContent = 'ALREADY CHECKED IN';
             document.getElementById('statusDetail').textContent = result.message || 'This ticket was already used';
             if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+            showResultOverlay('used', 'ALREADY USED', result.message || 'This ticket has already been checked in.', result.data || result);
         }
 
         function showInvalidResult(result) {
@@ -454,12 +524,33 @@
             document.getElementById('statusText').textContent = 'INVALID';
             document.getElementById('statusDetail').textContent = result.message || 'Ticket could not be verified';
             if (navigator.vibrate) navigator.vibrate(300);
+            showResultOverlay('invalid', 'INVALID', result.message || 'Ticket could not be verified.', null);
+        }
+
+        function showResultOverlay(type, title, msg, data) {
+            var overlay = document.getElementById('resultOverlay');
+            var icon = document.getElementById('resultIcon');
+            overlay.className = 'result-overlay show result-' + type;
+            icon.className = 'result-icon ' + type;
+            document.getElementById('resultTitle').textContent = title;
+            document.getElementById('resultMsg').textContent = msg;
+            document.getElementById('rName').textContent = data ? (data.name || '--') : '--';
+            document.getElementById('rTeam').textContent = data ? (data.teamName || '--') : '--';
+            document.getElementById('rTrack').textContent = data ? (data.track || '--') : '--';
+            document.getElementById('rTicket').textContent = data ? (data.ticketId || '--') : '--';
+            if (data) document.getElementById('resultCard').style.display = 'block';
+            else document.getElementById('resultCard').style.display = 'none';
         }
 
         function resetFromResult() {
             resetState();
             initScanner();
             isProcessing = false;
+        }
+
+        function resetFromButton() {
+            document.getElementById('resultOverlay').classList.remove('show');
+            resetFromResult();
         }
 
         async function validateTicket(code) {
