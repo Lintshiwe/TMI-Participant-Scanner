@@ -6,19 +6,10 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, proxy-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <link rel="icon" type="image/png" href="assets/favicon.png">
-    <title>TMI Scanner v4</title>
-    <script>document.documentElement.dataset.v="4"</script>
+    <title>TMI Ticket Scanner</title>
+    <script>document.documentElement.dataset.v="5"</script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <script>if(!/Mobi|Android|iPad|iPhone|iPod|tablet|webOS/i.test(navigator.userAgent)){window.location.replace('desktop-restricted.html')}</script>
     <style>
-        :root {
-            --primary: #3b82f6;
-            --success: #4ade80;
-            --warning: #fbbf24;
-            --danger: #f87171;
-        }
-
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         body {
@@ -34,65 +25,73 @@
         /* ── Header Stats Bar ─────────────────────── */
         .header {
             position: absolute; top: 0; left: 0; right: 0;
-            z-index: 10; padding: 24px 20px 8px;
+            z-index: 10; padding: 16px 20px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
             display: flex; justify-content: space-between; align-items: center;
         }
-        .stats { display: flex; gap: 20px; }
+        .stats { display: flex; gap: 16px; }
         .stat-item { text-align: center; }
         .stat-value { font-size: 18px; font-weight: 700; }
-        .stat-label { font-size: 10px; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px; }
-        .stat-valid .stat-value { color: var(--success); }
-        .stat-invalid .stat-value { color: var(--danger); }
+        .stat-label { font-size: 10px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-valid .stat-value { color: #4ade80; }
+        .stat-invalid .stat-value { color: #f87171; }
 
         .flash-btn {
-            width: 44px; height: 44px; border-radius: 50%;
-            background: rgba(255,255,255,0.12); border: none;
+            width: 40px; height: 40px; border-radius: 50%;
+            background: rgba(255,255,255,0.15); border: none;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
+            cursor: pointer; backdrop-filter: blur(10px);
         }
-        .flash-btn svg { width: 22px; height: 22px; fill: white; }
-        .flash-btn.active { background: var(--warning); }
+        .flash-btn svg { width: 20px; height: 20px; fill: white; }
+        .flash-btn.active { background: #fbbf24; }
         .flash-btn.active svg { fill: #000; }
 
-        /* ── Camera Viewport ──────────────────────── */
+        /* ── Camera Viewfinder ────────────────────── */
         #reader { 
             flex: 1; position: relative; 
             width: 100% !important; height: 100% !important;
-            background: #000;
         }
-        #reader video { 
-            object-fit: cover !important; 
-            width: 100% !important; height: 100% !important; 
-            display: block !important;
-        }
-        /* Only hide the dashboard selection UI, NOT scan_region (contains video) */
-        #reader__dashboard_section_csr span,
-        #reader__camera_selection,
-        #reader__status_span,
-        #reader__dashboard_section { display: none !important; }
+        #reader video { object-fit: cover; width: 100% !important; height: 100% !important; }
+        
+        #reader__dashboard_section_csr span, 
+        #reader__camera_selection, 
+        #reader__status_span { display: none !important; }
 
         /* ── Scan Overlay ─────────────────────────── */
         .scan-overlay {
-            position: fixed; inset: 0; z-index: 5;
+            position: absolute; inset: 0; z-index: 5;
             pointer-events: none;
-            background: rgba(0,0,0,0.65);
+            background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.7) 70%);
             display: flex; align-items: center; justify-content: center;
         }
 
         .scan-frame {
             width: 260px; height: 260px;
-            border: 2px solid rgba(255,255,255,0.3);
             border-radius: 24px;
             position: relative;
-            transition: border-color 0.4s, box-shadow 0.4s;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
+            transition: all 0.4s;
         }
 
-        /* ── Scan Line ────────────────────────────── */
+        /* Corner Brackets */
+        .corner {
+            position: absolute; width: 30px; height: 30px;
+            border-color: #3b82f6; border-style: solid;
+            transition: all 0.3s ease;
+            z-index: 6;
+        }
+        .corner.tl { top: -2px; left: -2px; border-width: 4px 0 0 4px; border-radius: 12px 0 0 0; }
+        .corner.tr { top: -2px; right: -2px; border-width: 4px 4px 0 0; border-radius: 0 12px 0 0; }
+        .corner.bl { bottom: -2px; left: -2px; border-width: 0 0 4px 4px; border-radius: 0 0 0 12px; }
+        .corner.br { bottom: -2px; right: -2px; border-width: 0 4px 4px 0; border-radius: 0 0 12px 0; }
+
+        /* Scanning Laser Line */
         .scan-line {
             position: absolute; left: 10%; right: 10%; height: 2px;
-            background: linear-gradient(90deg, transparent, var(--primary), transparent);
-            box-shadow: 0 0 12px var(--primary);
+            background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+            box-shadow: 0 0 10px #3b82f6;
             animation: scanMove 2s ease-in-out infinite;
+            opacity: 0.8;
             z-index: 6;
         }
 
@@ -103,10 +102,10 @@
             50% { top: 90%; }
         }
 
-        /* ── Success Ring ─────────────────────────── */
+        /* Success Ring */
         .success-ring {
             position: absolute; inset: -6px;
-            border: 3px solid var(--success);
+            border: 3px solid #4ade80;
             border-radius: 30px;
             opacity: 0; transform: scale(0.8);
             transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -114,7 +113,7 @@
         }
         .success-ring.show { opacity: 1; transform: scale(1); box-shadow: 0 0 30px rgba(74,222,128,0.3); }
 
-        /* ── Checkmark ────────────────────────────── */
+        /* Checkmark */
         .checkmark {
             position: absolute; inset: 0;
             display: flex; align-items: center; justify-content: center;
@@ -125,11 +124,30 @@
         .checkmark.show { opacity: 1; transform: scale(1); }
         .checkmark svg {
             width: 70px; height: 70px;
-            stroke: var(--success); stroke-width: 6; fill: none;
+            stroke: #4ade80; stroke-width: 6; fill: none;
             filter: drop-shadow(0 4px 10px rgba(74,222,128,0.5));
         }
         .checkmark path { stroke-dasharray: 100; stroke-dashoffset: 100; animation: drawCheck 0.6s ease forwards 0.15s; }
         @keyframes drawCheck { to { stroke-dashoffset: 0; } }
+
+        /* State Colors */
+        .state-analyzing .corner { border-color: #3b82f6; animation: pulse 1s infinite; }
+        .state-analyzing .scan-line { animation: none; top: 50%; opacity: 0.5; }
+
+        .state-valid .corner { border-color: #4ade80; }
+        .state-valid .scan-line { background: linear-gradient(90deg, transparent, #4ade80, transparent); box-shadow: 0 0 10px #4ade80; animation: none; top: 50%; }
+
+        .state-used .corner { border-color: #fbbf24; }
+        .state-used .scan-line { background: linear-gradient(90deg, transparent, #fbbf24, transparent); box-shadow: 0 0 10px #fbbf24; animation: none; top: 50%; }
+        .state-used .scan-frame { animation: shake 0.5s ease; }
+
+        .state-invalid .corner { border-color: #f87171; }
+        .state-invalid .scan-line { background: linear-gradient(90deg, transparent, #f87171, transparent); box-shadow: 0 0 10px #f87171; animation: none; top: 50%; }
+        .state-invalid .scan-frame { animation: shake 0.5s ease; }
+
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         /* ── Status Text ──────────────────────────── */
         .status-text {
@@ -170,42 +188,33 @@
         .info-label { color: rgba(255,255,255,0.35); }
         .info-value { color: white; font-weight: 600; }
 
-        /* ── State Colors ─────────────────────────── */
-        .state-analyzing .scan-frame { border-color: var(--primary); box-shadow: 0 0 20px rgba(59,130,246,0.2); }
-        .state-analyzing .scan-line { animation: none; top: 50%; opacity: 0.5; }
-        .state-analyzing .status-text { color: var(--primary); }
-
-        .state-valid .scan-frame { border-color: var(--success); box-shadow: 0 0 25px rgba(74,222,128,0.3); }
-        .state-valid .scan-line { background: linear-gradient(90deg, transparent, var(--success), transparent); box-shadow: 0 0 12px var(--success); animation: none; top: 50%; }
-        .state-valid .status-text { color: var(--success); }
-
-        .state-used .scan-frame { border-color: var(--warning); box-shadow: 0 0 25px rgba(251,191,36,0.3); animation: shake 0.5s ease; }
-        .state-used .scan-line { background: linear-gradient(90deg, transparent, var(--warning), transparent); box-shadow: 0 0 12px var(--warning); animation: none; top: 50%; }
-        .state-used .status-text { color: var(--warning); }
-
-        .state-invalid .scan-frame { border-color: var(--danger); box-shadow: 0 0 25px rgba(248,113,113,0.3); animation: shake 0.5s ease; }
-        .state-invalid .scan-line { background: linear-gradient(90deg, transparent, var(--danger), transparent); box-shadow: 0 0 12px var(--danger); animation: none; top: 50%; }
-        .state-invalid .status-text { color: var(--danger); }
-
-        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+        .state-analyzing .status-text { color: #3b82f6; }
+        .state-valid .status-text { color: #4ade80; }
+        .state-used .status-text { color: #fbbf24; }
+        .state-invalid .status-text { color: #f87171; }
 
         /* ── Bottom Controls ──────────────────────── */
         .controls {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            z-index: 10; padding: 40px 20px 32px;
+            position: absolute; bottom: 0; left: 0; right: 0;
+            z-index: 10; padding: 24px 20px 40px;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
             display: flex; flex-direction: column; gap: 12px;
         }
+
         .manual-btn {
             width: 100%; padding: 16px;
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
             border-radius: 16px; color: white; font-size: 15px; font-weight: 600;
-            cursor: pointer;
+            cursor: pointer; backdrop-filter: blur(10px);
             display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-        .manual-btn:active { background: rgba(255,255,255,0.18); }
-        .instruction { text-align: center; font-size: 13px; opacity: 0.4; }
+        .manual-btn:active { background: rgba(255,255,255,0.2); }
 
-        /* ── Manual Entry ─────────────────────────── */
+        .instruction {
+            text-align: center; font-size: 13px; opacity: 0.6;
+        }
+
+        /* ── Manual Entry Input ───────────────────── */
         .manual-input-modal {
             position: fixed; inset: 0; z-index: 100;
             background: rgba(0,0,0,0.95); backdrop-filter: blur(20px);
@@ -213,13 +222,15 @@
             padding: 40px;
         }
         .manual-input-modal.show { display: flex; }
+
         .manual-input-modal input {
             width: 100%; max-width: 300px; padding: 16px;
             background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);
             border-radius: 12px; color: white; font-size: 18px; text-align: center;
             margin-bottom: 20px; outline: none;
         }
-        .manual-input-modal input:focus { border-color: var(--primary); }
+        .manual-input-modal input:focus { border-color: #3b82f6; }
+
         .close-manual {
             margin-top: 20px; background: none; border: none;
             color: rgba(255,255,255,0.6); font-size: 14px; cursor: pointer;
@@ -227,10 +238,6 @@
 
         @media (min-width: 768px) {
             .scan-frame { width: 320px; height: 320px; }
-        }
-        @media (max-width: 360px) {
-            .scan-frame { width: 220px; height: 220px; }
-            .ticket-info { width: 240px; }
         }
     </style>
 </head>
@@ -260,6 +267,10 @@
 
     <div class="scan-overlay" id="scanOverlay">
         <div class="scan-frame" id="scanFrame">
+            <div class="corner tl"></div>
+            <div class="corner tr"></div>
+            <div class="corner bl"></div>
+            <div class="corner br"></div>
             <div class="scan-line" id="scanLine"></div>
             <div class="success-ring" id="successRing"></div>
             <div class="checkmark" id="checkmark">
@@ -283,7 +294,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12h6M12 9v6"/></svg>
             Enter Code Manually
         </button>
-        <div class="instruction">Scan the QR code on a participant's ticket</div>
+        <div class="instruction">Align QR code within the frame</div>
     </div>
 
     <div class="manual-input-modal" id="manualModal">
@@ -293,7 +304,7 @@
     </div>
 
     <script>
-        const FORM_HANDLER_URL = 'https://tmi-form-handler.netlify.app';
+        var FORM_HANDLER_URL = 'https://tmi-form-handler.netlify.app';
 
         var stats = { total: 0, valid: 0, invalid: 0 };
         var scanner = null;
@@ -301,13 +312,10 @@
         var flashOn = false;
         var resetTimer = null;
 
-        // ── Nuke library's scan boundary overlay ─────
         function removeScanBoundary() {
             var scanRegion = document.getElementById('reader__scan_region');
             if (!scanRegion) return;
-
             var video = scanRegion.querySelector('video');
-            // Remove any element that isn't the video or an ancestor of it
             var all = scanRegion.querySelectorAll('*');
             var toRemove = [];
             for (var i = 0; i < all.length; i++) {
@@ -315,14 +323,12 @@
                 if (el === video) continue;
                 if (video && el.contains(video)) continue;
                 if (el.id === 'reader__dashboard_section') continue;
-                el.style.cssText = ''; // strip inline styles
                 toRemove.push(el);
             }
             for (var i = 0; i < toRemove.length; i++) {
                 try { toRemove[i].remove(); } catch(e) {}
             }
             scanRegion.style.background = 'transparent';
-            // Position video to fill the reader
             if (video) {
                 video.style.position = 'absolute';
                 video.style.top = '0';
@@ -333,18 +339,14 @@
             }
         }
 
-        // ── Scanner Init ──────────────────────────────
         function initScanner() {
-            if (scanner && scanner._isScanning) return;
             scanner = new Html5Qrcode("reader");
-            
             scanner.start(
                 { facingMode: "environment" },
                 { fps: 10, qrbox: { width: 250, height: 250 }, disableFlip: false },
                 onScanSuccess,
                 onScanFailure
             ).then(function() {
-                // Nuke the library's dashed-border scan boundary
                 setTimeout(removeScanBoundary, 200);
             }).catch(function(err) {
                 console.error("Camera error:", err);
@@ -357,25 +359,19 @@
             }
         }
 
-        // ── Phase Transitions ─────────────────────────
         function setState(state) {
             document.getElementById('scanOverlay').className = 'scan-overlay state-' + state;
-            document.getElementById('statusText').className = 'status-text';
-            document.getElementById('statusText').classList.add('state-' + state);
         }
 
         function resetState() {
             document.getElementById('scanOverlay').className = 'scan-overlay';
-            document.getElementById('statusText').className = 'status-text';
             document.getElementById('statusText').textContent = 'Scanning...';
             document.getElementById('statusDetail').textContent = 'Align QR code within the frame';
             document.getElementById('successRing').classList.remove('show');
             document.getElementById('checkmark').classList.remove('show');
             document.getElementById('ticketInfo').classList.remove('show');
-            document.getElementById('scanFrame').style.animation = '';
         }
 
-        // ── Scan Success ──────────────────────────────
         async function onScanSuccess(decodedText) {
             if (isProcessing) return;
             isProcessing = true;
@@ -405,9 +401,7 @@
             document.getElementById('statusText').textContent = 'VERIFIED';
             document.getElementById('statusDetail').textContent = 'Access granted. Welcome to TMI!';
             document.getElementById('successRing').classList.add('show');
-
             setTimeout(function() { document.getElementById('checkmark').classList.add('show'); }, 200);
-
             if (result.data) {
                 document.getElementById('tName').textContent = result.data.name || '--';
                 document.getElementById('tTeam').textContent = result.data.teamName || '--';
@@ -438,7 +432,6 @@
             isProcessing = false;
         }
 
-        // ── Backend Validation ────────────────────────
         async function validateTicket(code) {
             var ticketId = code;
             var sig = '';
@@ -454,7 +447,6 @@
                     body: JSON.stringify({ ticketId: ticketId, sig: sig })
                 });
                 var result = await res.json();
-
                 if (result.success && result.data) {
                     return { isValid: true, data: result.data };
                 } else if (result.error === 'already_checked_in') {
@@ -463,11 +455,10 @@
                     return { isValid: false, errorType: 'invalid', message: result.error || 'Invalid ticket' };
                 }
             } catch (err) {
-                return { isValid: false, errorType: 'error', message: 'Connection error. Check your connection.' };
+                return { isValid: false, errorType: 'error', message: 'Connection error' };
             }
         }
 
-        // ── Stats ─────────────────────────────────────
         async function loadStats() {
             try {
                 var r = await fetch(FORM_HANDLER_URL + '/api/scanner-stats');
@@ -498,15 +489,16 @@
             persistStats();
         }
 
-        // ── Manual Entry ──────────────────────────────
         function showManualInput() {
             document.getElementById('manualModal').classList.add('show');
             document.getElementById('manualCode').focus();
         }
+
         function hideManualInput() {
             document.getElementById('manualModal').classList.remove('show');
             document.getElementById('manualCode').value = '';
         }
+
         async function validateManual() {
             var code = document.getElementById('manualCode').value.trim();
             if (!code) return;
@@ -525,11 +517,11 @@
             clearTimeout(resetTimer);
             resetTimer = setTimeout(resetFromResult, result.isValid ? 5000 : 4000);
         }
+
         document.getElementById('manualCode')?.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') validateManual();
         });
 
-        // ── Flashlight ────────────────────────────────
         async function toggleFlash() {
             var btn = document.getElementById('flashBtn');
             try {
@@ -542,7 +534,6 @@
             } catch (e) { console.error('Flash error:', e); }
         }
 
-        // ── Init ──────────────────────────────────────
         window.addEventListener('DOMContentLoaded', async function() {
             await loadStats();
             initScanner();
